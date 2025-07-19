@@ -1,16 +1,18 @@
 import os
 import telebot
 from telebot import types
+from flask import Flask, request
+import threading
 
 # جلب التوكن من متغير البيئة
 TOKEN = os.getenv("TELEGRAM_TOKEN")
-
 if not TOKEN:
     raise ValueError("⚠️ متغير البيئة TELEGRAM_TOKEN غير موجود. الرجاء إضافته في إعدادات Render.")
 
 bot = telebot.TeleBot(TOKEN)
+app = Flask(__name__)
 
-# لوحة الرئيسية
+# --- تعريف القوائم ---
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row("1️⃣ تخصصات برامج الدبلوم - حضوري", "2️⃣ تخصصات برامج الدبلوم - عن بعد")
@@ -18,7 +20,6 @@ def main_menu():
     markup.row("5️⃣ مواقع فروع جامعة الملك سعود", "6️⃣ التجسير", "7️⃣ شرح البلاك بورد")
     return markup
 
-# قائمة حضوري
 def حضوري_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row("دبلوم محاسبة", "دبلوم التسويق", "دبلوم الأنظمة")
@@ -32,7 +33,6 @@ def حضوري_menu():
     markup.row("🔙 رجوع")
     return markup
 
-# قائمة عن بعد
 def عن_بعد_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row("شرح - البلاك بورد / Blackboard")
@@ -44,7 +44,7 @@ def عن_بعد_menu():
     markup.row("🔙 BACK")
     return markup
 
-# عند /start
+# --- بوت handlers ---
 @bot.message_handler(commands=['start'])
 def start_handler(message):
     text = (
@@ -54,7 +54,6 @@ def start_handler(message):
     )
     bot.send_message(message.chat.id, text, parse_mode="Markdown", reply_markup=main_menu())
 
-# التعامل مع كل الرسائل الأخرى
 @bot.message_handler(func=lambda m: True)
 def menu_handler(message):
     text = message.text.strip()
@@ -103,8 +102,19 @@ def menu_handler(message):
     else:
         bot.send_message(message.chat.id, "❗الأمر غير معروف، الرجاء استخدام القائمة.")
 
-# إزالة أي webhook مفعل مسبقًا (مهم جداً لتجنب الخطأ 409)
-bot.remove_webhook()
+# --- صفحة الصحة ---
+@app.route('/healthz')
+def healthz():
+    return "OK", 200
 
-# بدء البوت مع الانتظار المستمر للرسائل
-bot.infinity_polling()
+# --- تشغيل البوت في خلفية منفصلة ---
+def run_bot():
+    bot.infinity_polling()
+
+threading.Thread(target=run_bot).start()
+
+# --- تشغيل سيرفر Flask ---
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+    
