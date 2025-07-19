@@ -1,8 +1,9 @@
+import os
 import telebot
 from telebot import types
 
-# بيانات البوت
-TOKEN = '7684091983:AAHkXWM-jDaovpD4gWTngSkv-ahNNpIlgaI'
+# جلب التوكن من متغير البيئة
+TOKEN = os.getenv("TELEGRAM_TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
 # لوحة الرئيسية
@@ -54,7 +55,6 @@ def start_handler(message):
 def menu_handler(message):
     text = message.text.strip()
 
-    # رجوع للقائمة الرئيسية
     if text in ["🔙 رجوع", "🔙 BACK"]:
         bot.send_message(message.chat.id, "تم الرجوع إلى القائمة الرئيسية ✅", reply_markup=main_menu())
 
