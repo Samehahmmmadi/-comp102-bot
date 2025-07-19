@@ -103,4 +103,8 @@ def menu_handler(message):
     else:
         bot.send_message(message.chat.id, "❗الأمر غير معروف، الرجاء استخدام القائمة.")
 
+# إزالة أي webhook مفعل مسبقًا (مهم جداً لتجنب الخطأ 409)
+bot.remove_webhook()
+
+# بدء البوت مع الانتظار المستمر للرسائل
 bot.infinity_polling()
