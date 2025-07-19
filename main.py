@@ -4,6 +4,10 @@ from telebot import types
 
 # جلب التوكن من متغير البيئة
 TOKEN = os.getenv("TELEGRAM_TOKEN")
+
+if not TOKEN:
+    raise ValueError("⚠️ متغير البيئة TELEGRAM_TOKEN غير موجود. الرجاء إضافته في إعدادات Render.")
+
 bot = telebot.TeleBot(TOKEN)
 
 # لوحة الرئيسية
