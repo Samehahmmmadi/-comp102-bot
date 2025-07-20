@@ -3,6 +3,7 @@ from flask import Flask, request
 import telebot
 from telebot import types
 
+# جلب التوكن من متغير البيئة
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 if not TOKEN:
     raise ValueError("⚠️ متغير البيئة TELEGRAM_TOKEN غير موجود. الرجاء إضافته في إعدادات Render.")
@@ -10,7 +11,7 @@ if not TOKEN:
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-# --- قوائم الردود (نفس قوائمك) ---
+# --- قوائم الردود ---
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row("1️⃣ تخصصات برامج الدبلوم - حضوري", "2️⃣ تخصصات برامج الدبلوم - عن بعد")
@@ -21,7 +22,7 @@ def main_menu():
 def حضوري_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row("دبلوم محاسبة", "دبلوم التسويق", "دبلوم الأنظمة")
-    # ... باقي القائمة ...
+    # ... أكمل باقي خيارات القائمة هنا ...
     markup.row("🔙 رجوع")
     return markup
 
@@ -32,7 +33,7 @@ def عن_بعد_menu():
     markup.row("🔙 BACK")
     return markup
 
-# --- handlers ---
+# --- معالجات الرسائل ---
 @bot.message_handler(commands=['start'])
 def start_handler(message):
     text = (
@@ -51,12 +52,12 @@ def menu_handler(message):
         bot.send_message(message.chat.id, "اختر أحد تخصصات الدبلوم الحضوري:", reply_markup=حضوري_menu())
     elif text == "2️⃣ تخصصات برامج الدبلوم - عن بعد":
         bot.send_message(message.chat.id, "اختر أحد تخصصات الدبلوم عن بعد:", reply_markup=عن_بعد_menu())
-    # ... أكمل باقي الخيارات كما في كودك ...
+    # ... أكمل باقي الخيارات كما في كودك الأصلي ...
     else:
-        bot.send_message(message.chat.id, "❗الأمر غير معروف، الرجاء استخدام القائمة.")
+        bot.send_message(message.chat.id, "❗ الأمر غير معروف، الرجاء استخدام القائمة.")
 
-# --- استقبال التحديثات من Telegram عبر Webhook ---
-@app.route('/' + TOKEN, methods=['POST'])
+# --- استقبال تحديثات Telegram عبر Webhook ---
+@app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
     json_string = request.get_data().decode('utf-8')
     update = telebot.types.Update.de_json(json_string)
@@ -64,15 +65,15 @@ def webhook():
     return '', 200
 
 # --- مسار لفحص حالة السيرفر ---
-@app.route('/')
+@app.route('/', methods=['GET'])
 def index():
     return "Bot is alive!", 200
 
 if __name__ == '__main__':
-    # ازالة أي webhook سابق
+    # إزالة أي webhook سابق
     bot.remove_webhook()
-    # تعيين webhook على الرابط الحقيقي
-    WEBHOOK_URL = f"https://YOUR_DOMAIN_HERE/{TOKEN}"  # غيره برابط موقعك مع https
+    # ضبط الـ webhook إلى رابط تطبيقك على Render
+    WEBHOOK_URL = f"https://comp102-bot-lbog.onrender.com/{TOKEN}"
     bot.set_webhook(url=WEBHOOK_URL)
 
     port = int(os.environ.get('PORT', 5000))
