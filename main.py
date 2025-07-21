@@ -7,7 +7,7 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 if not TOKEN:
     raise ValueError("⚠️ متغير البيئة TELEGRAM_TOKEN غير موجود. الرجاء إضافته في إعدادات Render.")
 
-bot = telebot.TeleBot(TOKEN)
+bot = telebot.TeleBot(TOKEN) 
 app = Flask(__name__)
 
 # --- قوائم الردود ---
