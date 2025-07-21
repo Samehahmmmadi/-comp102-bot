@@ -1,4 +1,4 @@
-# https://t.me/SaudDiploma_bot
+# https://t.me/KingSaudDiploma_bot
 # بوت دبلوم جامعة الملك سعود 
 
 هذا البوت تم تطويره كبوت لكل مايخص دبلوم جامعة الملك سعود
