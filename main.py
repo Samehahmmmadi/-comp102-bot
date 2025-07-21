@@ -162,7 +162,7 @@ def right_tab_handler(message):
             "* مساعد مدقق حسابات\n"
             "* كاتب إداري في الإدارة المالية\n"
             "* مساعد مدرب في مجال التخصص\n\n"
-            "https://t.me/SaudDiploma_bot"
+            "https://t.me/KingSaudDiploma_bot"
         )
         bot.send_message(message.chat.id, reply, parse_mode="Markdown")
 
@@ -229,7 +229,7 @@ def right_tab_handler(message):
             "- محصّل إيرادات\n"
             "- مراقب تجاري\n"
             "- وغيرها من الوظائف ذات الصلة بالمجال المالي والمصرفي.\n\n"
-            "https://t.me/SaudDiploma_bot"
+            "https://t.me/KingSaudDiploma_bot"
         )
         bot.send_message(message.chat.id, reply, parse_mode="Markdown")
 
@@ -289,7 +289,7 @@ def right_tab_handler(message):
             "▫️ جامعة الملك سعود (الملز): https://maps.app.goo.gl/4bnaxNA8vMDRSp9D7\n\n"
             "▫️ جامعة الملك سعود (الوشم عيال): https://maps.app.goo.gl/sCo9BkV1WaEeXVGa8?g_st=it\n\n"
             "▫️ جامعة الملك سعود (المدينة الجامعية للطالبات): https://maps.app.goo.gl/EZcL9XVz1w8UomYF6?g_st=ic\n\n"
-            "بوت الجامعة: https://t.me/SaudDiploma_bot"
+            "بوت الجامعة: https://t.me/KingSaudDiploma_bot"
         )
         bot.send_message(message.chat.id, reply)
 
