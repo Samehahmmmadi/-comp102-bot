@@ -318,7 +318,7 @@ def getMessage():
 @app.route('/')
 def webhook():
     bot.remove_webhook()
-    bot.set_webhook(url='https://YOUR_RENDER_APP_URL/' + TOKEN)
+    bot.set_webhook(url='https://kingsauddiploma-bot.onrender.com/' + TOKEN)
     return "Webhook set", 200
 
 
