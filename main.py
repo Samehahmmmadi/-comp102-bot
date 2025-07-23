@@ -977,8 +977,7 @@ if __name__ == '__main__':
     # عند بدء تشغيل التطبيق، نقوم بتعيين الـ Webhook
     # هذا يضمن أن الـ Webhook يتم تعيينه في كل مرة يتم فيها بدء تشغيل التطبيق
     bot.remove_webhook()
-    bot.set_webhook(url=RENDER_WEBHOOK_URL)ح
-
+    bot.set_webhook(url=RENDER_WEBHOOK_URL)
     # تشغيل تطبيق Flask.
     # '0.0.0.0' يجعل التطبيق متاحًا من أي عنوان IP خارجي.
     # 'PORT' يتم جلبه من متغيرات البيئة (عادةً 5000 على Render).
