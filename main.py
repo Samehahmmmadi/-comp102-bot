@@ -667,10 +667,36 @@ h.alshareef@cfy.ksu.edu.sa
 • 🔸 جامعة الملك سعود (المدينة الجامعية للطالبات): <a href="https://maps.me/EZcL9XVz1w8UomYF6?g_st=ic">الخريطة</a>""",
     "شروط التجسير في جامعة الملك سعود": """شروط التجسير في جامعة الملك سعود
 <a href="https://t.me/Diploma_Solutions/24">https://t.me/Diploma_Solutions/24</a>""",
-    "🛑شرح استخدام – البلاك بورد / Blackboard 🛑": """شرح استخدام- البلاك بورد/ Blackboard ->
-<a href="https://t.me/Diploma_Solutions/16">https://t.me/Diploma_Solutions/16</a>"""
-}
+    
+"🛑شرح استخدام – البلاك بورد / Blackboard 🛑": """✅️ كل ما تريد معرفته حول منصة التعليم عن بُعد البلاك بوورد تجده هنا:👇
 
+1. طريقة الدخول الى المحاضرة المباشرة:
+<a href="https://t.me/Diploma_Solutions/6">https://t.me/Diploma_Solutions/6</a>
+
+2. طريقة حضور المحاضرات المسجلة:
+<a href="https://t.me/Diploma_Solutions/8">https://t.me/Diploma_Solutions/8</a>
+
+3. طريقة حل المناقشات:
+<a href="https://t.me/Diploma_Solutions/10">https://t.me/Diploma_Solutions/10</a>
+
+4. طريقة حل الواجب:
+<a href="https://t.me/Diploma_Solutions/7">https://t.me/Diploma_Solutions/7</a>
+
+5. طريقة حل التقييم الذاتي:
+<a href="https://t.me/Diploma_Solutions/12">https://t.me/Diploma_Solutions/12</a>
+
+🛑مقطع فيديو شرح استخدام -البلاك بورد/ Blackboard ->
+<a href="https://t.me/Diploma_Solutions/16">https://t.me/Diploma_Solutions/16</a>
+
+• للدخول هنا قروب - مستجدين الدبلوم👇🏻
+<a href="https://t.me/Diploma_New_1447">https://t.me/Diploma_New_1447</a>
+
+♻️ قروبات -استفسارات الدبلوم ↪️
+<a href="https://t.me/book_KSU_1447">https://t.me/book_KSU_1447</a>
+
+◆بوت المساعدة - دبلوم جامعة الملك سعود->
+<a href="https://t.me/KingSaudDiploma_bot">https://t.me/KingSaudDiploma_bot</a>"""
+}
 # Helper function to create a ReplyKeyboardMarkup
 def create_keyboard(buttons):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
