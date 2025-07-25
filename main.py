@@ -20,11 +20,15 @@ app = Flask(__name__)
 
 # عنوان URL لخدمة Render الخاصة بك.
 # RENDER_EXTERNAL_URL هو متغير بيئة يتم توفيره بواسطة Render ويحتوي على URL الأساسي لتطبيقك.
-RENDER_WEBHOOK_URL = os.getenv("RENDER_EXTERNAL_URL")
-if RENDER_WEBHOOK_URL:
-    RENDER_WEBHOOK_URL += TOKEN
+RENDER_EXTERNAL_URL_BASE = os.getenv("RENDER_EXTERNAL_URL")
+if RENDER_EXTERNAL_URL_BASE:
+    # تأكد من أن URL ينتهي بشرطة مائلة
+    if not RENDER_EXTERNAL_URL_BASE.endswith('/'):
+        RENDER_EXTERNAL_URL_BASE += '/'
+    RENDER_WEBHOOK_URL = RENDER_EXTERNAL_URL_BASE + TOKEN
 else:
     # يجب استبدال هذا بـ URL الخاص بتطبيقك المنشور إذا كنت لا تستخدم Render أو لم يتم تعيين المتغير.
+    # مثال: "https://your-app-name.onrender.com/" + TOKEN
     RENDER_WEBHOOK_URL = "https://your-deployed-app-url.com/" + TOKEN
     print("⚠️ لم يتم العثور على متغير بيئة RENDER_EXTERNAL_URL. يرجى تحديث RENDER_WEBHOOK_URL يدوياً.")
 
@@ -69,7 +73,7 @@ def get_gemini_response(prompt):
         ]
     }
     headers = {'Content-Type': 'application/json'}
-    params = {'key': GEMINI_API_KEY} # Canvas سيوفر المفتاح تلقائياً
+    params = {'key': GEMINI_API_KEY} # المفتاح سيتم توفيره تلقائياً في Canvas
 
     response = requests.post(GEMINI_API_URL, headers=headers, params=params, data=json.dumps(payload))
     response.raise_for_status() # إطلاق استثناء لأي أخطاء HTTP (مثل 4xx أو 5xx)
@@ -318,7 +322,7 @@ h.alshareef@cfy.ksu.edu.sa
 •   أمين صندوق، مأمور صرف، مساعد مدير مالي، مراقب مالي، مدقق حسابات، محصل إيرادات، مراقب تجاري.
 وغيرها من الوظائف ذات الصلة بالمجال المالي والمصرفي.
 """,
-            "الخطة الدراسية": "الخطة الدراسية للدبلوم المتوسط في الإدارة المالية والمصرفية: <a href=\"https://ascs.ksu.edu.sa/sites/ascs.ksu.edu.sa/files/attach/%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9_%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9_%D9%88%D8%A7%D9%84%D9%85%D8%B5%D8%B1%D9%81%D9%8A%D8%A9_%D8%B9%D9%86_%D8%A8%D8%B9%D8%AF.pdf\">عرض الخطة</a>",
+            "الخطة الدراسية": "الخطة الدراسية للدبلوم المتوسط في الإدارة المالية والمصرفية: <a href=\"https://ascs.ksu.edu.sa/sites/ascs.ksu.edu.sa/files/attach/%D8%A7%D9%84%D9%85%D8%AD%D8%A7%D8%B3%D8%A8%D8%A9_%D8%A7%D9%84%D9%85%D8%AA%D9%88%D8%B3%D8%B7%D8%A9_0.pdf\">عرض الخطة</a>",
             "وصف المقررات": "وصف المقررات للدبلوم المتوسط في الإدارة المالية والمصرفية: <a href=\"https://ascs.ksu.edu.sa/sites/ascs.ksu.edu.sa/files/attach/dblwm_ldr_lmly_wlmsrfy.pdf\">عرض الوصف</a>"
         },
         "دبلوم الوسائط المتعددة التفاعلية": {
@@ -725,7 +729,7 @@ h.alshareef@cfy.ksu.edu.sa
 • 🔸 جامعة الملك سعود (الروابي - مشترك): <a href="https://maps.app.goo.gl/1Xf9MqXCPs9fVkng7?g_st=it">عرض على الخريطة</a>
 • 🔸 جامعة الملك سعود (المبنى الرئيسي - تركي الأول): <a href="https://maps.app.goo.gl/NjeJTWoj4mhK5MUKA?g_st=it">عرض على الخريطة</a>
 • 🔸 جامعة الملك سعود (الملز): <a href="https://maps.app.goo.gl/4bnaxNA8vMDRSp9D7">عرض على الخريطة</a>
-• 🔸 جامعة الملك سعود (الوشم - عيال): <a href="https://maps.app.goo.gl/sCo9BkV1WaEeXVGa8?g_st=it">عرض على الخريطة</a>
+• 🔸 جامعة الملك سعود (الوشم - عيال): <a href="https://maps.app.com/sCo9BkV1WaEeXVGa8?g_st=it">عرض على الخريطة</a>
 • 🔸 جامعة الملك سعود (المدينة الجامعية للطالبات): <a href="https://maps.me/EZcL9XVz1w8UomYF6?g_st=ic">عرض على الخريطة</a>""",
     "شروط التجسير في جامعة الملك سعود": """شروط التجسير في جامعة الملك سعود
 <a href="https://t.me/Diploma_Solutions/24">عرض الشروط على تيليجرام</a>""",
@@ -1005,7 +1009,8 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"❌ حدث خطأ أثناء تعيين الويب هوك: {e}")
 
-    # تشغيل تطبيق Flask.
+    # تشغيل تطبيق Flask.⁶
     # '0.0.0.0' يجعل التطبيق متاحًا من أي عنوان IP خارجي.
     # 'PORT' يتم جلبه من متغيرات البيئة (عادةً 5000 على Render).
-    app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000))) 
+            
