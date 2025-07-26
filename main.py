@@ -33,12 +33,10 @@ else:
     print("⚠️ لم يتم العثور على متغير بيئة RENDER_EXTERNAL_URL. يرجى تحديث RENDER_WEBHOOK_URL يدوياً.")
 
 # إعدادات واجهة برمجة تطبيقات Gemini (نموذج gemini-2.0-flash).
-# يتم جلب المفتاح من متغيرات البيئة.
+# تم تضمين مفتاح API مباشرة في الكود بناءً على طلب المستخدم.
+# تحذير: هذه الممارسة لا يُنصح بها لأسباب أمنية في بيئات الإنتاج.
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") # تم التعديل: قراءة المفتاح من متغيرات البيئة
-
-if not GEMINI_API_KEY:
-    print("⚠️ متغير البيئة GEMINI_API_KEY غير موجود. وظيفة الذكاء الاصطناعي قد لا تعمل.")
+GEMINI_API_KEY = "AIzaSyAMTPehz-r1y1V2TKyNeItcjkFDxFvwJ1c" # تم التعديل: المفتاح مضاف مباشرة
 
 # -- قائمة الأوامر على اليسار (أزرار في لوحة المفاتيح) --
 left_commands = ["star", "help"]
@@ -67,8 +65,9 @@ def get_gemini_response(prompt):
     """
     يرسل مطالبة إلى Gemini API ويعيد النص الذي تم إنشاؤه.
     """
-    if not GEMINI_API_KEY:
-        return "عذراً، لا يمكنني التواصل مع الذكاء الاصطناعي حالياً. مفتاح الـ API غير متوفر."
+    # بما أن المفتاح مضاف مباشرة، لا نحتاج للتحقق من وجوده كمتغير بيئة هنا
+    # if not GEMINI_API_KEY:
+    #     return "عذراً، لا يمكنني التواصل مع الذكاء الاصطناعي حالياً. مفتاح الـ API غير متوفر."
 
     payload = {
         "contents": [
@@ -448,7 +447,7 @@ h.alshareef@cfy.ksu.edu.sa
 توفر الخطة الدراسية مقررات متخصصة تهدف إلى تأهيل الطلاب بفهم شامل ومتقدم لأنظمة المحاسبة الضريبية والتشريعات المتعلقة بها، بما يمكنهم من العمل بكفاءة في المجالات المحاسبية والضريبية.
 """,
             "الخطة الدراسية": "الخطة الدراسية لدبلوم المحاسبة الضريبية: <a href=\"https://ascs.ksu.edu.sa/sites/ascs.ksu.edu.sa/files/attach/%D8%A7%D9%84%D9%85%D8%AD%D8%A7%D8%B3%D8%A8%D8%A9_%D8%A7%D9%84%D9%85%D8%AA%D9%88%D8%B3%D8%B7%D8%A9_0.pdf\">عرض الخطة</a>",
-            "وصف المقررات": "وصف المقررات الدراسية للدبلوم المتوسط في المحاسبة (الجديدة): <a href=\"https://ascs.ksu.edu.sa/sites/ascs.ksu.edu.sa/files/attach/wsf_mqrrt_dblwm_lskrtry_ltby.pdf\">عرض الوصف</a>"
+            "وصف المقررات": "وصف المقررات الدراسية للدبلوم المتوسط في السكرتارية الطبية (الجديدة): <a href=\"https://ascs.ksu.edu.sa/sites/ascs.ksu.edu.sa/files/attach/wsf_mqrrt_dblwm_lskrtry_ltby.pdf\">عرض الوصف</a>"
         },
         "دبلوم الترجمة بلغة الإشارة": {
             "menu_text": "الرجاء اختيار: ",
@@ -1018,6 +1017,4 @@ if __name__ == '__main__':
     # تشغيل تطبيق Flask.
     # '0.0.0.0' يجعل التطبيق متاحًا من أي عنوان IP خارجي.
     # 'PORT' يتم جلبه من متغيرات البيئة (عادةً 5000 على Render).
-    app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000))) 
-
-            
+    app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
