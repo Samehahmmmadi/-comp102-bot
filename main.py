@@ -4,6 +4,7 @@ import telebot
 from telebot import types
 import requests
 import json
+import base64 # تم إضافة هذه المكتبة لتحويل الصور إلى Base64
 
 # --- إعدادات البوت والـ API ---
 
@@ -60,20 +61,19 @@ right_tabs = [
 # هذا يسمح للبوت بتذكر أين كان المستخدم في القوائم المتداخلة
 user_states = {} # {chat_id: current_menu_key}
 
-# --- وظيفة للحصول على استجابة من Gemini API ---
-def get_gemini_response(prompt):
+# --- وظيفة للحصول على استجابة من Gemini API (متعدد الوسائط) ---
+def get_gemini_multimodal_response(parts):
     """
-    يرسل مطالبة إلى Gemini API ويعيد النص الذي تم إنشاؤه.
+    يرسل مطالبة متعددة الوسائط (نص وصور) إلى Gemini API ويعيد النص الذي تم إنشاؤه.
     """
-    # بما أن المفتاح مضاف مباشرة، لا نحتاج للتحقق من وجوده كمتغير بيئة هنا
-    # if not GEMINI_API_KEY:
-    #     return "عذراً، لا يمكنني التواصل مع الذكاء الاصطناعي حالياً. مفتاح الـ API غير متوفر."
+    if not GEMINI_API_KEY:
+        return "عذراً، لا يمكنني التواصل مع الذكاء الاصطناعي حالياً. مفتاح الـ API غير متوفر."
 
     payload = {
         "contents": [
             {
                 "role": "user",
-                "parts": [{"text": prompt}]
+                "parts": parts # هنا نمرر قائمة الأجزاء (النص والصورة)
             }
         ]
     }
@@ -762,7 +762,7 @@ h.alshareef@cfy.ksu.edu.sa
 ◆بوت المساعدة - دبلوم جامعة الملك سعود->
 <a href="https://t.me/KingSaudDiploma_bot">بوت المساعدة</a>""",
     "🤖 اسأل الذكاء الاصطناعي": {
-        "menu_text": "أهلاً بك في وضع الدردشة مع الذكاء الاصطناعي! 🤖\nيمكنك الآن طرح أي سؤال وسأجيبك.\n\nللعودة إلى القائمة الرئيسية للبوت، اضغط على زر '🔙 رجوع'.",
+        "menu_text": "أهلاً بك في وضع الدردشة مع الذكاء الاصطناعي! 🤖\nيمكنك الآن طرح أي سؤال أو إرسال صورة وسأجيبك.\n\nللعودة إلى القائمة الرئيسية للبوت، اضغط على زر '🔙 رجوع'.",
         "options": ["🔙 رجوع"]
     }
 }
@@ -819,45 +819,94 @@ def left_command_handler(message):
         reply = "فيديو #شــــــرح_استخدام_البوت سيتوفر قريبا"
     bot.send_message(chat_id, reply, parse_mode="HTML", reply_markup=get_main_keyboard()) # إرجاع لوحة المفاتيح الرئيسية
 
-# --- التعامل مع التبويبات في يمين البوت ---
-@bot.message_handler(func=lambda m: True) # يتعامل مع جميع الرسائل النصية
-def right_tab_handler(message):
+# --- معالج عام لجميع أنواع الرسائل (نص، صور، مستندات) ---
+# يجب أن يكون هذا المعالج في النهاية لكي لا يتعارض مع الأوامر الأخرى مثل /start
+@bot.message_handler(func=lambda m: True, content_types=['text', 'photo', 'document'])
+def handle_all_messages(message):
     chat_id = message.chat.id
-    user_text = message.text
+    user_text = message.text # النص المرفق مع الرسالة أو نص الرسالة نفسها
     current_state = user_states.get(chat_id, "main_menu") # الحصول على حالة المستخدم الحالية
-
-    reply_text = "عذراً، لم أفهم طلبك. الرجاء استخدام الأزرار."
-    reply_markup = get_main_keyboard()
 
     # --- معالجة وضع الدردشة مع الذكاء الاصطناعي ---
     if current_state == "ai_chat_active":
-        if user_text == "🔙 رجوع":
+        if message.text == "🔙 رجوع":
             user_states[chat_id] = "main_menu"
-            reply_text = "تم الخروج من وضع الدردشة مع الذكاء الاصطناعي. أهلاً بك في القائمة الرئيسية."
-            reply_markup = get_main_keyboard()
-        else:
-            # المستخدم يرسل استعلاماً إلى الذكاء الاصطناعي
-            bot.send_chat_action(chat_id, 'typing')
+            bot.send_message(chat_id, "تم الخروج من وضع الدردشة مع الذكاء الاصطناعي. أهلاً بك في القائمة الرئيسية.", reply_markup=get_main_keyboard())
+            return
+
+        bot.send_chat_action(chat_id, 'typing') # إظهار حالة "يكتب..." للمستخدم
+
+        prompt_parts = []
+        # إضافة النص إذا كان موجوداً في الرسالة
+        if message.text and message.text != "🤖 اسأل الذكاء الاصطناعي": # تجنب إضافة اسم الزر نفسه كمطالبة
+            prompt_parts.append({"text": message.text})
+
+        # معالجة الصور
+        if message.photo:
+            # الحصول على أكبر صورة (عادةً آخر عنصر في القائمة)
+            file_id = message.photo[-1].file_id
             try:
-                ai_response = get_gemini_response(user_text)
-                reply_text = ai_response
-                # الإبقاء على زر "🔙 رجوع" لوضع الدردشة مع الذكاء الاصطناعي
-                ai_chat_markup = create_keyboard(bot_content["🤖 اسأل الذكاء الاصطناعي"]["options"])
-                reply_markup = ai_chat_markup
-            except requests.exceptions.RequestException as e:
-                reply_text = f"عذراً، حدث خطأ أثناء التواصل مع الذكاء الاصطناعي: {e}"
-                reply_markup = create_keyboard(bot_content["🤖 اسأل الذكاء الاصطناعي"]["options"]) # البقاء في وضع الدردشة مع الذكاء الاصطناعي
+                # تنزيل الصورة
+                file_info = bot.get_file(file_id)
+                downloaded_file = bot.download_file(file_info.file_path)
+
+                # تحويل الصورة إلى Base64
+                # تحديد نوع MIME بناءً على امتداد الملف (افتراضياً JPEG هنا)
+                mime_type = "image/jpeg"
+                if file_info.file_path.lower().endswith(".png"):
+                    mime_type = "image/png"
+                elif file_info.file_path.lower().endswith(".gif"):
+                    mime_type = "image/gif" # إذا كنت تدعم GIF
+
+                encoded_image = base64.b64encode(downloaded_file).decode('utf-8')
+
+                # إضافة الصورة إلى أجزاء المطالبة
+                prompt_parts.append({
+                    "inlineData": {
+                        "mimeType": mime_type,
+                        "data": encoded_image
+                    }
+                })
+                # يمكن إضافة نص توضيحي للصورة هنا إذا لم يكن هناك نص في الرسالة
+                if not message.text:
+                    prompt_parts.append({"text": "ماذا يوجد في هذه الصورة؟"}) # مطالبة افتراضية للصورة
             except Exception as e:
-                reply_text = "عذراً، حدث خطأ غير متوقع أثناء معالجة طلبك."
-                reply_markup = create_keyboard(bot_content["🤖 اسأل الذكاء الاصطناعي"]["options"]) # البقاء في وضع الدردشة مع الذكاء الاصطناعي
-        bot.send_message(chat_id, reply_text, parse_mode="HTML", reply_markup=reply_markup)
+                print(f"ERROR: Failed to process photo: {e}")
+                bot.send_message(chat_id, f"عذراً، حدث خطأ أثناء معالجة الصورة: {e}", reply_markup=create_keyboard(bot_content["🤖 اسأل الذكاء الاصطناعي"]["options"]))
+                return
+        
+        # معالجة المستندات (الملفات الأخرى)
+        elif message.document:
+            # للتبسيط، لن نعالج المستندات (غير الصور) بـ Gemini مباشرة هنا
+            # لأنها تتطلب مكتبات إضافية لاستخراج المحتوى (مثل PyPDF2 لـ PDF)
+            bot.send_message(chat_id, "عذراً، لا أستطيع معالجة المستندات (مثل PDF أو Word) بواسطة الذكاء الاصطناعي حالياً. يمكنني فقط فهم النصوص والصور.", reply_markup=create_keyboard(bot_content["🤖 اسأل الذكاء الاصطناعي"]["options"]))
+            return
+
+        # إذا لم يكن هناك نص أو صورة صالحة للمعالجة بواسطة الذكاء الاصطناعي
+        if not prompt_parts:
+            bot.send_message(chat_id, "الرجاء إرسال نص أو صورة لأقوم بمعالجتها.", reply_markup=create_keyboard(bot_content["🤖 اسأل الذكاء الاصطناعي"]["options"]))
+            return
+
+        try:
+            # استدعاء Gemini API مع الأجزاء (نص وصورة)
+            ai_response = get_gemini_multimodal_response(prompt_parts)
+            bot.send_message(chat_id, ai_response, parse_mode="HTML", reply_markup=create_keyboard(bot_content["🤖 اسأل الذكاء الاصطناعي"]["options"]))
+        except requests.exceptions.RequestException as e:
+            print(f"ERROR: Gemini API request failed: {e}")
+            bot.send_message(chat_id, f"عذراً، حدث خطأ أثناء التواصل مع الذكاء الاصطناعي: {e}", reply_markup=create_keyboard(bot_content["🤖 اسأل الذكاء الاصطناعي"]["options"]))
+        except Exception as e:
+            print(f"ERROR: Unexpected error in AI chat: {e}")
+            bot.send_message(chat_id, "عذراً، حدث خطأ غير متوقع أثناء معالجة طلبك.", reply_markup=create_keyboard(bot_content["🤖 اسأل الذكاء الاصطناعي"]["options"]))
         return # مهم: الخروج بعد معالجة الدردشة مع الذكاء الاصطناعي
 
-    # --- معالجة القوائم الحالية ---
+    # --- معالجة القوائم العادية إذا لم يكن المستخدم في وضع الذكاء الاصطناعي ---
+    # هذا الجزء هو نفسه الذي لديك حالياً لمعالجة الأزرار والقوائم
+    reply_text = "عذراً، لم أفهم طلبك. الرجاء استخدام الأزرار."
+    reply_markup = get_main_keyboard()
+
     if user_text == "🔙 رجوع":
         # التعامل مع زر الرجوع
         if current_state.startswith("حضوري_sub_sub_menu_"):
-            # الرجوع من قائمة فرعية ثالثة للحضوري إلى قائمة الحضوري الفرعية
             user_states[chat_id] = "حضوري_sub_menu"
             reply_text = bot_content["تخصصات برامج الدبلوم - حضوري"]["menu_text"]
             reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - حضوري"]["options"])
@@ -865,16 +914,10 @@ def right_tab_handler(message):
             user_states[chat_id] = "main_menu"
             reply_text = "تم الرجوع إلى القائمة الرئيسية."
             reply_markup = get_main_keyboard()
-        elif current_state.startswith("عن_بعد_sub_sub_menu_"): # للرجوع من قوائم الدبلوم عن بعد الفرعية
-            parent_menu = current_state.replace("عن_بعد_sub_sub_menu_", "")
-            if parent_menu in bot_content["تخصصات برامج الدبلوم - عن بُعد"]:
-                user_states[chat_id] = "عن_بعد_sub_menu"
-                reply_text = bot_content["تخصصات برامج الدبلوم - عن بُعد"]["menu_text"]
-                reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - عن بُعد"]["options"])
-            else:
-                user_states[chat_id] = "main_menu"
-                reply_text = "تم الرجوع إلى القائمة الرئيسية."
-                reply_markup = get_main_keyboard()
+        elif current_state.startswith("عن_بعد_sub_sub_menu_"):
+            user_states[chat_id] = "عن_بعد_sub_menu"
+            reply_text = bot_content["تخصصات برامج الدبلوم - عن بُعد"]["menu_text"]
+            reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - عن بُعد"]["options"])
         elif current_state == "عن_بعد_sub_menu":
             user_states[chat_id] = "main_menu"
             reply_text = "تم الرجوع إلى القائمة الرئيسية."
@@ -892,7 +935,6 @@ def right_tab_handler(message):
         elif user_text in bot_content:
             content_item = bot_content[user_text]
             if isinstance(content_item, dict) and "options" in content_item:
-                # إذا كان التبويب يؤدي إلى قائمة فرعية
                 reply_text = content_item["menu_text"]
                 reply_markup = create_keyboard(content_item["options"])
                 if user_text == "تخصصات برامج الدبلوم - حضوري":
@@ -900,79 +942,68 @@ def right_tab_handler(message):
                 elif user_text == "تخصصات برامج الدبلوم - عن بُعد":
                     user_states[chat_id] = "عن_بعد_sub_menu"
             else:
-                # إذا كان التبويب يؤدي إلى نص مباشر
                 reply_text = content_item
-                reply_markup = get_main_keyboard() # البقاء على لوحة المفاتيح الرئيسية
+                reply_markup = get_main_keyboard()
         else:
             reply_text = "عذراً، هذا التبويب غير موجود. الرجاء استخدام الأزرار."
             reply_markup = get_main_keyboard()
     elif current_state == "حضوري_sub_menu":
-        # معالجة خيارات قائمة الدبلوم الحضوري الفرعية
         if user_text in bot_content["تخصصات برامج الدبلوم - حضوري"]:
             content_item = bot_content["تخصصات برامج الدبلوم - حضوري"][user_text]
             if isinstance(content_item, dict) and "options" in content_item:
-                # إذا كان الخيار يؤدي إلى قائمة فرعية أخرى (مثل تعريف بالتخصص)
                 reply_text = content_item["menu_text"]
                 reply_markup = create_keyboard(content_item["options"])
-                user_states[chat_id] = f"حضوري_sub_sub_menu_{user_text}" # تحديث الحالة للقائمة الفرعية الثالثة للحضوري
+                user_states[chat_id] = f"حضوري_sub_sub_menu_{user_text}"
             else:
-                # إذا كان الخيار يؤدي إلى نص مباشر (وهذا لن يحدث بعد التعديل)
                 reply_text = content_item
-                reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - حضوري"]["options"]) # البقاء على لوحة مفاتيح الدبلوم الحضوري
+                reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - حضوري"]["options"])
         else:
             reply_text = "عذراً، هذا التخصص غير موجود في قائمة الدبلوم الحضوري. الرجاء استخدام الأزرار."
             reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - حضوري"]["options"])
     elif current_state.startswith("حضوري_sub_sub_menu_"):
-        # معالجة خيارات القوائم الفرعية الثالثة للحضوري (مثل تعريف بالتخصص، الخطة الدراسية)
         parent_menu_key = current_state.replace("حضوري_sub_sub_menu_", "")
         if parent_menu_key in bot_content["تخصصات برامج الدبلوم - حضوري"] and \
            isinstance(bot_content["تخصصات برامج الدبلوم - حضوري"][parent_menu_key], dict) and \
            user_text in bot_content["تخصصات برامج الدبلوم - حضوري"][parent_menu_key]:
             content_item = bot_content["تخصصات برامج الدبلوم - حضوري"][parent_menu_key][user_text]
             reply_text = content_item
-            reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - حضوري"][parent_menu_key]["options"]) # البقاء على لوحة المفاتيح الفرعية الثالثة
+            reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - حضوري"][parent_menu_key]["options"])
         else:
             reply_text = "عذراً، هذا الخيار غير موجود. الرجاء استخدام الأزرار."
-            # محاولة العودة إلى القائمة الفرعية الثانية إذا لم يتم العثور على الخيار
             if parent_menu_key in bot_content["تخصصات برامج الدبلوم - حضوري"] and \
                isinstance(bot_content["تخصصات برامج الدبلوم - حضوري"][parent_menu_key], dict):
                 reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - حضوري"][parent_menu_key]["options"])
             else:
-                reply_markup = get_main_keyboard() # إذا فشل كل شيء، العودة إلى القائمة الرئيسية
+                reply_markup = get_main_keyboard()
                 user_states[chat_id] = "main_menu"
     elif current_state == "عن_بعد_sub_menu":
-        # معالجة خيارات قائمة الدبلوم عن بُعد الفرعية
         if user_text in bot_content["تخصصات برامج الدبلوم - عن بُعد"]:
             content_item = bot_content["تخصصات برامج الدبلوم - عن بُعد"][user_text]
             if isinstance(content_item, dict) and "options" in content_item:
-                # إذا كان الخيار يؤدي إلى قائمة فرعية أخرى (مثل تعريف بالتخصص)
                 reply_text = content_item["menu_text"]
                 reply_markup = create_keyboard(content_item["options"])
-                user_states[chat_id] = f"عن_بعد_sub_sub_menu_{user_text}" # تحديث الحالة للقائمة الفرعية الثالثة
+                user_states[chat_id] = f"عن_بعد_sub_sub_menu_{user_text}"
             else:
-                # إذا كان الخيار يؤدي إلى نص مباشر
                 reply_text = content_item
-                reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - عن بُعد"]["options"]) # البقاء على لوحة مفاتيح الدبلوم عن بعد
+                reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - عن بُعد"]["options"])
         else:
             reply_text = "عذراً، هذا الخيار غير موجود في قائمة الدبلوم عن بُعد. الرجاء استخدام الأزرار."
             reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - عن بُعد"]["options"])
     elif current_state.startswith("عن_بعد_sub_sub_menu_"):
-        # معالجة خيارات القوائم الفرعية الثالثة (مثل تعريف بالتخصص، الخطة الدراسية)
         parent_menu_key = current_state.replace("عن_بعد_sub_sub_menu_", "")
         if parent_menu_key in bot_content["تخصصات برامج الدبلوم - عن بُعد"] and \
            isinstance(bot_content["تخصصات برامج الدبلوم - عن بُعد"][parent_menu_key], dict) and \
            user_text in bot_content["تخصصات برامج الدبلوم - عن بُعد"][parent_menu_key]:
             content_item = bot_content["تخصصات برامج الدبلوم - عن بُعد"][parent_menu_key][user_text]
             reply_text = content_item
-            reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - عن بُعد"][parent_menu_key]["options"]) # البقاء على لوحة المفاتيح الفرعية الثالثة
+            reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - عن بُعد"][parent_menu_key]["options"])
         else:
             reply_text = "عذراً، هذا الخيار غير موجود. الرجاء استخدام الأزرار."
-            # محاولة العودة إلى القائمة الفرعية الثانية إذا لم يتم العثور على الخيار
             if parent_menu_key in bot_content["تخصصات برامج الدبلوم - عن بُعد"] and \
                isinstance(bot_content["تخصصات برامج الدبلوم - عن بُعد"][parent_menu_key], dict):
                 reply_markup = create_keyboard(bot_content["تخصصات برامج الدبلوم - عن بُعد"][parent_menu_key]["options"])
             else:
-                reply_markup = get_main_keyboard() # إذا فشل كل شيء، العودة إلى القائمة الرئيسية
+                reply_markup = get_main_keyboard()
                 user_states[chat_id] = "main_menu"
 
     # إضافة طباعة لتصحيح الأخطاء (ستظهر في سجلات Render)
