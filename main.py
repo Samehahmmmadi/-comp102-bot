@@ -1158,11 +1158,17 @@ def getMessage():
 def webhook():
     return "Bot is running", 200
 
-if __name__ == '__main__':
-    try:
-        bot.remove_webhook()
-        bot.set_webhook(url=RENDER_WEBHOOK_URL)
-        print(f"✅ تم تعيين الويب هوك بنجاح إلى: {RENDER_WEBHOOK_URL}")
-    except Exception as e:
-        print(f"❌ حدث خطأ أثناء تعيين الويب هوك: {e}")
+# --- إعداد الـ WEBHOOK (الجزء الذي تم تعديله) ---
+# هذا الكود يتم تشغيله مرة واحدة عند بدء تشغيل التطبيق على Render
+try:
+    bot.remove_webhook()
+    bot.set_webhook(url=RENDER_WEBHOOK_URL)
+    # هذه الرسالة ستظهر في سجلات Render لتأكيد النجاح
+    print(f"✅ تم تعيين الويب هوك بنجاح إلى: {RENDER_WEBHOOK_URL}")
+except Exception as e:
+    print(f"❌ حدث خطأ أثناء تعيين الويب هوك: {e}")
+
+# هذا الجزء مخصص للتشغيل المحلي فقط ولن يتم استخدامه بواسطة Render
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
+    
