@@ -4,23 +4,31 @@ import telebot
 from telebot import types
 import requests
 import json
-import base64
+import base64 # تم إضافة هذه المكتبة لتحويل الصور إلى Base64
 
 # --- إعدادات البوت والـ API ---
+
+# يتم جلب التوكن من متغيرات البيئة.
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 if not TOKEN:
-    raise ValueError("⚠️ متغير البيئة TELEGRAM_TOKEN غير موجود.")
-bot = telebot.TeleBot(TOKEN, parse_mode='HTML')
+    raise ValueError("⚠️ متغير البيئة TELEGRAM_TOKEN غير موجود. الرجاء إضافته في إعدادات Render.")
+
+# تهيئة كائن البوت باستخدام التوكن (تأكد من threaded=False إذا كانت هناك مشاكل غير متوقعة)
+bot = telebot.TeleBot(TOKEN, threaded=False) # **أضف threaded=False هنا للتأكد**
+
+# تهيئة تطبيق Flask
 app = Flask(__name__)
 
-# عنوان URL لخدمة Render.
+# عنوان URL لخدمة Render الخاصة بك.
 RENDER_EXTERNAL_URL_BASE = os.getenv("RENDER_EXTERNAL_URL")
 if RENDER_EXTERNAL_URL_BASE:
     if not RENDER_EXTERNAL_URL_BASE.endswith('/'):
         RENDER_EXTERNAL_URL_BASE += '/'
     RENDER_WEBHOOK_URL = f"{RENDER_EXTERNAL_URL_BASE}{TOKEN}"
 else:
-    raise ValueError("⚠️ متغير البيئة RENDER_EXTERNAL_URL غير موجود. الرجاء إضافته.")
+    # هذا يجب أن يكون URL تطبيقك المنشور
+    RENDER_WEBHOOK_URL = "https://your-deployed-app-url.com/" + TOKEN
+    print("⚠️ تحذير: متغير البيئة RENDER_EXTERNAL_URL غير موجود. تأكد من أن RENDER_WEBHOOK_URL صحيح.")
 
 # إعدادات واجهة برمجة تطبيقات Gemini
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
@@ -1132,9 +1140,9 @@ def handle_all_messages(message):
         print(f"ERROR: Failed to send message to {chat_id}: {e}")
         bot.send_message(chat_id, "عذراً، حدث خطأ أثناء عرض المحتوى. الرجاء المحاولة لاحقاً.", parse_mode="HTML", reply_markup=reply_markup)
 
-# مسار الـ webhook الرئيسي لاستقبال التحديثات من تليجرام
+# --- معالج طلبات الـ Webhook من Telegram ---
 @app.route(f'/{TOKEN}', methods=['POST'])
-def webhook():
+def webhook_handler():
     if request.headers.get('content-type') == 'application/json':
         json_string = request.get_data().decode('utf-8')
         update = telebot.types.Update.de_json(json_string)
@@ -1143,14 +1151,20 @@ def webhook():
     else:
         abort(403)
 
-# مسار لبدء البوت وإعداد الـ webhook
+# مسار لبدء البوت وإعداد الـ webhook (عند زيارة URL الرئيسي)
 @app.route('/')
 def index():
-    bot.remove_webhook()
-    bot.set_webhook(url=RENDER_WEBHOOK_URL)
-    return 'Bot is running and webhook is set!', 200
+    try:
+        bot.remove_webhook()
+        bot.set_webhook(url=RENDER_WEBHOOK_URL)
+        return 'Bot webhook set successfully and running!', 200
+    except Exception as e:
+        return f'Failed to set webhook: {e}', 500
 
+# هذا الجزء لا يجب تشغيله مباشرة إذا كنت تستخدم Gunicorn
+# Gunicorn هو من سيستدعي app.run()
 if __name__ == '__main__':
-    # لا تقم بتشغيل Flask مباشرة هنا في بيئة الإنتاج (Render)
-    # Gunicorn هو من سيتولى تشغيل التطبيق
-    print("Bot is ready. Gunicorn will handle the app deployment.")
+    print("Bot is ready. If running locally, use app.run(). For Render, Gunicorn handles it.")
+    # للتشغيل المحلي للاختبار (ليس للنشر على Render)
+    # bot.remove_webhook()
+    # app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
