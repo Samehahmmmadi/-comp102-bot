@@ -33,16 +33,16 @@ else:
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 GEMINI_API_KEY = "AIzaSyAMTPehz-r1y1V2TKyNeItcjkFDxFvwJ1c"
 # --- النص المائي (الروابط) الذي سيتم إضافته في الأسفل ---
-# تم تعديل التنسيق لجعله أقل بروزًا باستخدام <small> و <em> (مائل)
+# تم تعديل التنسيق لجعله أقل بروزًا باستخدام <em> (مائل) بدلاً من <small>
 WATERMARK_TEXT = """
 \n\n--------------------------------------------------\n
-<small><em>
+<em>
 🔗 <b>روابط مجتمعات الواتساب</b> 🔗
 <a href="https://chat.whatsapp.com/EHETDcCSS8u8gHJmhHIhd7?mode=ac_t">قروب مستجدين (دبلوم إدارة أعمال التأمين)</a>
-<a href="https://chat.com/BJKQUheFNb0J1OMnmZd2CB?mode=ac_t">قروب تسويق</a>
+<a href="https://chat.whatsapp.com/BJKQUheFNb0J1OMnmZd2CB?mode=ac_t">قروب تسويق</a>
 <a href="https://chat.whatsapp.com/Hl54YOKpu5SBiJ0pfXnPVY?mod e=ac_t">قروب مستجدين (دبلوم مالية ومصرفية عن بعد)</a>
 <a href="https://chat.whatsapp.com/DeRMqxJj24hFWs6B3umWVI?mode=ac_t">قروب مستجدين (دبلوم موارد بشريه)</a>
-</em></small>
+</em>
 """
 
 # -- قائمة الأوامر على اليسار (أزرار في لوحة المفاتيح) --
