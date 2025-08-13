@@ -1,44 +1,30 @@
 import os
-from flask import Flask, request
+from flask import Flask, request, abort
 import telebot
 from telebot import types
 import requests
 import json
-import base64 # تم إضافة هذه المكتبة لتحويل الصور إلى Base64
+import base64
 
 # --- إعدادات البوت والـ API ---
-
-# يتم جلب التوكن من متغيرات البيئة.
-# تأكد من أن متغير البيئة TELEGRAM_TOKEN مضبوط بشكل صحيح في إعدادات Render.
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 if not TOKEN:
-    raise ValueError("⚠️ متغير البيئة TELEGRAM_TOKEN غير موجود. الرجاء إضافته في إعدادات Render.")
-
-# تهيئة كائن البوت باستخدام التوكن
-bot = telebot.TeleBot(TOKEN)
-# تهيئة تطبيق Flask
+    raise ValueError("⚠️ متغير البيئة TELEGRAM_TOKEN غير موجود.")
+bot = telebot.TeleBot(TOKEN, parse_mode='HTML')
 app = Flask(__name__)
 
-# عنوان URL لخدمة Render الخاصة بك.
-# RENDER_EXTERNAL_URL هو متغير بيئة يتم توفيره بواسطة Render ويحتوي على URL الأساسي لتطبيقك.
+# عنوان URL لخدمة Render.
 RENDER_EXTERNAL_URL_BASE = os.getenv("RENDER_EXTERNAL_URL")
 if RENDER_EXTERNAL_URL_BASE:
-    # تأكد من أن URL ينتهي بشرطة مائلة
     if not RENDER_EXTERNAL_URL_BASE.endswith('/'):
         RENDER_EXTERNAL_URL_BASE += '/'
-    RENDER_WEBHOOK_URL = RENDER_EXTERNAL_URL_BASE + TOKEN
+    RENDER_WEBHOOK_URL = f"{RENDER_EXTERNAL_URL_BASE}{TOKEN}"
 else:
-    # يجب استبدال هذا بـ URL الخاص بتطبيقك المنشور إذا كنت لا تستخدم Render أو لم يتم تعيين المتغير.
-    # مثال: "https://your-app-name.onrender.com/" + TOKEN
-    RENDER_WEBHOOK_URL = "https://your-deployed-app-url.com/" + TOKEN
-    print("⚠️ لم يتم العثور على متغير بيئة RENDER_EXTERNAL_URL. يرجى تحديث RENDER_WEBHOOK_URL يدوياً.")
+    raise ValueError("⚠️ متغير البيئة RENDER_EXTERNAL_URL غير موجود. الرجاء إضافته.")
 
-# إعدادات واجهة برمجة تطبيقات Gemini (نموذج gemini-2.0-flash).
-# تم تضمين مفتاح API مباشرة في الكود بناءً على طلب المستخدم.
-# تحذير: هذه الممارسة لا يُنصح بها لأسباب أمنية في بيئات الإنتاج.
+# إعدادات واجهة برمجة تطبيقات Gemini
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-GEMINI_API_KEY = "AIzaSyAMTPehz-r1y1V2TKyNeItcjkFDxFvwJ1c" # تم التعديل: المفتاح مضاف مباشرة
-
+GEMINI_API_KEY = "AIzaSyAMTPehz-r1y1V2TKyNeItcjkFDxFvwJ1c"
 # --- النص المائي (الروابط) الذي سيتم إضافته في الأسفل ---
 WATERMARK_TEXT = """
 \n\n--------------------------------------------------\n
@@ -1146,21 +1132,25 @@ def handle_all_messages(message):
         print(f"ERROR: Failed to send message to {chat_id}: {e}")
         bot.send_message(chat_id, "عذراً، حدث خطأ أثناء عرض المحتوى. الرجاء المحاولة لاحقاً.", parse_mode="HTML", reply_markup=reply_markup)
 
-# --- إعداد الـ Webhook (تم نقله إلى هنا) ---
-# هذا الكود سيتم تشغيله مباشرة عند بدء تشغيل التطبيق.
-print(f"Setting webhook to: {RENDER_WEBHOOK_URL}")
-bot.set_webhook(url=RENDER_WEBHOOK_URL, allowed_updates=['message'])
-print("Webhook set successfully!")
-
-# --- معالج طلبات الـ Webhook من Telegram ---
-@app.route('/' + TOKEN, methods=['POST'])
+# مسار الـ webhook الرئيسي لاستقبال التحديثات من تليجرام
+@app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
-    json_string = request.get_data().decode('utf-8')
-    update = telebot.types.Update.de_json(json_string)
-    bot.process_new_updates([update])
-    return 'ok', 200
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return '', 200
+    else:
+        abort(403)
 
-# --- تشغيل تطبيق Flask ---
+# مسار لبدء البوت وإعداد الـ webhook
+@app.route('/')
+def index():
+    bot.remove_webhook()
+    bot.set_webhook(url=RENDER_WEBHOOK_URL)
+    return 'Bot is running and webhook is set!', 200
+
 if __name__ == '__main__':
-    # هنا لا نفعل أي شيء غير تشغيل الخادم
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    # لا تقم بتشغيل Flask مباشرة هنا في بيئة الإنتاج (Render)
+    # Gunicorn هو من سيتولى تشغيل التطبيق
+    print("Bot is ready. Gunicorn will handle the app deployment.")
