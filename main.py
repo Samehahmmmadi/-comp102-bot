@@ -1146,29 +1146,21 @@ def handle_all_messages(message):
         print(f"ERROR: Failed to send message to {chat_id}: {e}")
         bot.send_message(chat_id, "عذراً، حدث خطأ أثناء عرض المحتوى. الرجاء المحاولة لاحقاً.", parse_mode="HTML", reply_markup=reply_markup)
 
-# --- Webhook endpoint for Flask ---
+# --- إعداد الـ Webhook (تم نقله إلى هنا) ---
+# هذا الكود سيتم تشغيله مباشرة عند بدء تشغيل التطبيق.
+print(f"Setting webhook to: {RENDER_WEBHOOK_URL}")
+bot.set_webhook(url=RENDER_WEBHOOK_URL, allowed_updates=['message'])
+print("Webhook set successfully!")
+
+# --- معالج طلبات الـ Webhook من Telegram ---
 @app.route('/' + TOKEN, methods=['POST'])
-def getMessage():
-    json_str = request.get_data().decode('UTF-8')
-    update = telebot.types.Update.de_json(json_str)
-    bot.process_new_updates([update])
-    return "!", 200
-
-@app.route('/')
 def webhook():
-    return "Bot is running", 200
+    json_string = request.get_data().decode('utf-8')
+    update = telebot.types.Update.de_json(json_string)
+    bot.process_new_updates([update])
+    return 'ok', 200
 
-# --- إعداد الـ WEBHOOK (الجزء الذي تم تعديله) ---
-# هذا الكود يتم تشغيله مرة واحدة عند بدء تشغيل التطبيق على Render
-try:
-    bot.remove_webhook()
-    bot.set_webhook(url=RENDER_WEBHOOK_URL)
-    # هذه الرسالة ستظهر في سجلات Render لتأكيد النجاح
-    print(f"✅ تم تعيين الويب هوك بنجاح إلى: {RENDER_WEBHOOK_URL}")
-except Exception as e:
-    print(f"❌ حدث خطأ أثناء تعيين الويب هوك: {e}")
-
-# هذا الجزء مخصص للتشغيل المحلي فقط ولن يتم استخدامه بواسطة Render
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
-    
+# --- تشغيل تطبيق Flask ---
+if __name__ == '__main__':
+    # هنا لا نفعل أي شيء غير تشغيل الخادم
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
